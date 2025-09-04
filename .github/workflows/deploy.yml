@@ -23,6 +23,6 @@ jobs:
             cd /var/www/mock_interviews_ai
             git reset --hard
             git pull origin main
-            npm install --legacy-peer-deps
+            npm install 
             npm run build
-            pm2 restart  || true
+            pm2 restart all || true
