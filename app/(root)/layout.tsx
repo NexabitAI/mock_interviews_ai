@@ -3,7 +3,6 @@ import Image from "next/image";
 import { ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { isAuthenticated } from "@/lib/actions/auth.action";
-import SignOutButton from "@/components/SignOutButton"; // ⬅️ add this
 
 const Layout = async ({ children }: { children: ReactNode }) => {
   const isUserAuthenticated = await isAuthenticated();
@@ -17,8 +16,15 @@ const Layout = async ({ children }: { children: ReactNode }) => {
           <h2 className="text-primary-100">PrepWise</h2>
         </Link>
 
-        {/* Button in front of the logo (opposite side) with space-between */}
-        <SignOutButton />
+        {/* Server-rendered logout button via POST */}
+        <form action="/api/auth/logout" method="POST">
+          <button
+            type="submit"
+            className="px-3 py-2 text-sm rounded-md border border-gray-300 hover:bg-gray-100"
+          >
+            Sign out
+          </button>
+        </form>
       </nav>
 
       {children}
