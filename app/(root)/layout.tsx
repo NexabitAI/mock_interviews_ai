@@ -20,7 +20,7 @@ const Layout = async ({ children }: { children: ReactNode }) => {
         <form action="/api/auth/logout" method="POST">
           <button
             type="submit"
-            className="px-3 py-2 text-sm rounded-md border border-gray-300 hover:bg-gray-100"
+            className="px-3 py-2 text-sm rounded-md border border-gray-300 hover:border-gray-100"
           >
             Sign out
           </button>
