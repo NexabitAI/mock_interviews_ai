@@ -19,9 +19,9 @@ const InterviewCard = async ({
   const feedback =
     userId && interviewId
       ? await getFeedbackByInterviewId({
-          interviewId,
-          userId,
-        })
+        interviewId,
+        userId,
+      })
       : null;
 
   const normalizedType = /mix/gi.test(type) ? "Mixed" : type;
@@ -61,7 +61,7 @@ const InterviewCard = async ({
           />
 
           {/* Interview Role */}
-          <h3 className="mt-5 capitalize">{role} Interview</h3>
+          <h3 className="mt-5 capitalize">{role} Interviews</h3>
 
           {/* Date & Score */}
           <div className="flex flex-row gap-5 mt-3">
