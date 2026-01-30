@@ -1,9 +1,10 @@
-import Groq from "groq-sdk";
+import OpenAI from "openai";
 import { db } from "@/firebase/admin";
 import { getRandomInterviewCover } from "@/lib/utils";
 
-const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY!,
+const grok = new OpenAI({
+  apiKey: process.env.GROK_API_KEY!, // ✅ correct key
+  baseURL: "https://api.x.ai/v1",    // ✅ xAI endpoint
 });
 
 export async function POST(request: Request) {
@@ -11,14 +12,14 @@ export async function POST(request: Request) {
     await request.json();
 
   try {
-    const completion = await groq.chat.completions.create({
-      model: "llama-3.1-70b-versatile",
+    const completion = await grok.chat.completions.create({
+      model: "grok-2-mini", // ✅ fast + cheap
       temperature: 0.6,
       messages: [
         {
           role: "system",
           content:
-            "You are a professional interviewer generating interview questions. Return only valid JSON.",
+            "You are a professional interviewer generating interview questions. Return ONLY valid JSON.",
         },
         {
           role: "user",
@@ -48,7 +49,6 @@ Rules:
       throw new Error("Empty AI response");
     }
 
-    // Parse questions safely
     const questions: string[] = JSON.parse(raw);
 
     const interview = {
