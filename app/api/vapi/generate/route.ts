@@ -3,17 +3,24 @@ import { db } from "@/firebase/admin";
 import { getRandomInterviewCover } from "@/lib/utils";
 
 const grok = new OpenAI({
-  apiKey: process.env.GROK_API_KEY!, // ✅ correct key
-  baseURL: "https://api.x.ai/v1",    // ✅ xAI endpoint
+  apiKey: process.env.GROK_API_KEY!,
+  baseURL: "https://api.x.ai/v1",
 });
 
 export async function POST(request: Request) {
   const { type, role, level, techstack, amount, userid } =
     await request.json();
 
+  if (!userid) {
+    return Response.json(
+      { success: false, message: "User not authenticated" },
+      { status: 401 }
+    );
+  }
+
   try {
     const completion = await grok.chat.completions.create({
-      model: "grok-2-mini", // ✅ fast + cheap
+      model: "grok-2-mini",
       temperature: 0.6,
       messages: [
         {
@@ -44,12 +51,14 @@ Rules:
     });
 
     const raw = completion.choices[0]?.message?.content;
+    if (!raw) throw new Error("Empty AI response");
 
-    if (!raw) {
-      throw new Error("Empty AI response");
+    let questions: string[];
+    try {
+      questions = JSON.parse(raw.trim());
+    } catch {
+      throw new Error("Invalid JSON from AI");
     }
-
-    const questions: string[] = JSON.parse(raw);
 
     const interview = {
       role,
