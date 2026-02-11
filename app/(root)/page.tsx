@@ -27,7 +27,7 @@ async function Home() {
         <div className="flex flex-col gap-6 max-w-lg">
           <h2>Get Interview-Ready with AI-Powered Practice & Feedback</h2>
           <p className="text-lg">
-            Practice real interview questions & get instant feedback
+            Practice real interview questions & get instant feedbacksss
           </p>
 
           <Button asChild className="btn-primary max-sm:w-full">
