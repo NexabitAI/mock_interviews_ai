@@ -1,71 +1,36 @@
-import OpenAI from "openai";
+import { generateText } from "ai";
+import { google } from "@ai-sdk/google";
+
 import { db } from "@/firebase/admin";
 import { getRandomInterviewCover } from "@/lib/utils";
 
-const grok = new OpenAI({
-  apiKey: process.env.GROK_API_KEY!,
-  baseURL: "https://api.x.ai/v1",
-});
-
 export async function POST(request: Request) {
-  const { type, role, level, techstack, amount, userid } =
-    await request.json();
-
-  if (!userid) {
-    return Response.json(
-      { success: false, message: "User is not authenticated" },
-      { status: 401 }
-    );
-  }
+  const { type, role, level, techstack, amount, userid } = await request.json();
 
   try {
-    const completion = await grok.chat.completions.create({
-      model: "grok-2-mini",
-      temperature: 0.6,
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are a professional interviewer generating interview questions. Return ONLY valid JSON.",
-        },
-        {
-          role: "user",
-          content: `
-Prepare ${amount} interview questions.
-
-Role: ${role}
-Experience level: ${level}
-Tech stack: ${techstack}
-Focus: ${type}
-
-Rules:
-- Return ONLY valid JSON
-- No markdown
-- No special characters like / or *
-- Output format EXACTLY like this:
-
-["Question 1", "Question 2", "Question 3"]
-`,
-        },
-      ],
+    const { text: questions } = await generateText({
+      model: google("gemini-2.0-flash-001"),
+      prompt: `Prepare questions for a job interview.
+        The job role is ${role}.
+        The job experience level is ${level}.
+        The tech stack used in the job is: ${techstack}.
+        The focus between behavioural and technical questions should lean towards: ${type}.
+        The amount of questions required is: ${amount}.
+        Please return only the questions, without any additional text.
+        The questions are going to be read by a voice assistant so do not use "/" or "*" or any other special characters which might break the voice assistant.
+        Return the questions formatted like this:
+        ["Question 1", "Question 2", "Question 3"]
+        
+        Thank you! <3
+    `,
     });
 
-    const raw = completion.choices[0]?.message?.content;
-    if (!raw) throw new Error("Empty AI response");
-
-    let questions: string[];
-    try {
-      questions = JSON.parse(raw.trim());
-    } catch {
-      throw new Error("Invalid JSON from AI");
-    }
-
     const interview = {
-      role,
-      type,
-      level,
+      role: role,
+      type: type,
+      level: level,
       techstack: techstack.split(","),
-      questions,
+      questions: JSON.parse(questions),
       userId: userid,
       finalized: true,
       coverImage: getRandomInterviewCover(),
@@ -76,11 +41,8 @@ Rules:
 
     return Response.json({ success: true }, { status: 200 });
   } catch (error) {
-    console.error("Interview generation error:", error);
-    return Response.json(
-      { success: false, message: "Failed to generate interview" },
-      { status: 500 }
-    );
+    console.error("Error:", error);
+    return Response.json({ success: false, error: error }, { status: 500 });
   }
 }
 
