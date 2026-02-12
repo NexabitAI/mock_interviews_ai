@@ -1,5 +1,4 @@
 import OpenAI from "openai";
-
 import { db } from "@/firebase/admin";
 import { getRandomInterviewCover } from "@/lib/utils";
 
@@ -8,10 +7,17 @@ const openai = new OpenAI({
 });
 
 export async function POST(request: Request) {
-  const { type, role, level, techstack, amount, userid } =
-    await request.json();
-
   try {
+    const { type, role, level, techstack, amount, userId } =
+      await request.json();
+
+    if (!userId) {
+      return Response.json(
+        { success: false, error: "Missing userId" },
+        { status: 400 }
+      );
+    }
+
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       temperature: 0.7,
@@ -24,7 +30,7 @@ export async function POST(request: Request) {
         {
           role: "user",
           content: `
-Prepare questions for a job interview.
+Prepare interview questions.
 
 Role: ${role}
 Experience Level: ${level}
@@ -32,12 +38,8 @@ Tech Stack: ${techstack}
 Focus: ${type}
 Number of questions: ${amount}
 
-Rules:
-- Return ONLY a JSON array
-- Do not include extra text
-- Do not use special characters like / or *
-- Format example:
-["Question 1", "Question 2"]
+Return format example:
+["Question 1", "Question 2", "Question 3"]
 `,
         },
       ],
@@ -59,8 +61,8 @@ Rules:
       level,
       techstack: techstack.split(","),
       questions,
-      userId: userid,
-      finalized: true,
+      userId, // ✅ CORRECT FIELD NAME
+      finalized: false,
       coverImage: getRandomInterviewCover(),
       createdAt: new Date().toISOString(),
     };
@@ -69,7 +71,7 @@ Rules:
 
     return Response.json({ success: true }, { status: 200 });
   } catch (error: any) {
-    console.error("OPENAI INTERVIEW ERROR:", error.message);
+    console.error("INTERVIEW GENERATE ERROR:", error.message);
     return Response.json(
       { success: false, error: error.message },
       { status: 500 }
@@ -79,7 +81,7 @@ Rules:
 
 export async function GET() {
   return Response.json(
-    { success: true, data: "Thank yous!" },
+    { success: true, message: "Interview API working" },
     { status: 200 }
   );
 }
