@@ -79,7 +79,7 @@ Rules:
 
 export async function GET() {
   return Response.json(
-    { success: true, data: "Thank you!" },
+    { success: true, data: "Thank yous!" },
     { status: 200 }
   );
 }
