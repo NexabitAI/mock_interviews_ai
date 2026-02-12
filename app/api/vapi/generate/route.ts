@@ -98,7 +98,7 @@ Rules:
 
 export async function GET() {
   return Response.json(
-    { success: true, message: "Interview API is working" },
+    { success: true, message: "Interview API  working" },
     { status: 200 }
   );
 }
