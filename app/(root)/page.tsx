@@ -10,29 +10,18 @@ import {
   getLatestInterviews,
 } from "@/lib/actions/general.action";
 
-async function Home() {
+export default async function Home() {
   const user = await getCurrentUser();
 
-  // 🔒 Prevent undefined userId crash
   if (!user?.id) {
-    return (
-      <section className="mt-8">
-        <p>User not authenticated.</p>
-      </section>
-    );
+    return <p className="mt-8">User not authenticated.</p>;
   }
 
-  const [userInterviews, allInterview] = await Promise.all([
-    getInterviewsByUserId(user.id),
-    getLatestInterviews({ userId: user.id }),
-  ]);
-
-  const hasPastInterviews = (userInterviews?.length ?? 0) > 0;
-  const hasUpcomingInterviews = (allInterview?.length ?? 0) > 0;
+  const userInterviews = await getInterviewsByUserId(user.id);
+  const allInterview = await getLatestInterviews({ userId: user.id });
 
   return (
     <>
-      {/* CTA Section */}
       <section className="card-cta">
         <div className="flex flex-col gap-6 max-w-lg">
           <h2>Get Interview-Ready with AI-Powered Practice & Feedback</h2>
@@ -54,13 +43,12 @@ async function Home() {
         />
       </section>
 
-      {/* Your Interviews */}
       <section className="flex flex-col gap-6 mt-8">
         <h2>Your Interviews</h2>
 
         <div className="interviews-section">
-          {hasPastInterviews ? (
-            userInterviews?.map((interview) => (
+          {userInterviews.length > 0 ? (
+            userInterviews.map((interview) => (
               <InterviewCard
                 key={interview.id}
                 userId={user.id}
@@ -72,18 +60,17 @@ async function Home() {
               />
             ))
           ) : (
-            <p>You haven&apos;t taken any interviews yet</p>
+            <p>You haven't taken any interviewsz yet</p>
           )}
         </div>
       </section>
 
-      {/* Take Interviews */}
       <section className="flex flex-col gap-6 mt-8">
         <h2>Take Interviews</h2>
 
         <div className="interviews-section">
-          {hasUpcomingInterviews ? (
-            allInterview?.map((interview) => (
+          {allInterview.length > 0 ? (
+            allInterview.map((interview) => (
               <InterviewCard
                 key={interview.id}
                 userId={user.id}
@@ -102,5 +89,3 @@ async function Home() {
     </>
   );
 }
-
-export default Home;
