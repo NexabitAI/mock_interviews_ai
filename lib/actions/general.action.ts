@@ -3,6 +3,7 @@
 import OpenAI from "openai";
 import { db } from "@/firebase/admin";
 import { feedbackSchema } from "@/constants";
+import { getCurrentUser } from "@/lib/actions/auth.action";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY!,
@@ -13,11 +14,19 @@ const openai = new OpenAI({
 ============================================================ */
 
 export async function createFeedback(params: CreateFeedbackParams) {
-  const { interviewId, userId, transcript, feedbackId } = params;
+  const { interviewId, transcript, feedbackId } = params;
 
   try {
-    if (!interviewId || !userId) {
-      throw new Error("Missing interviewId or userId");
+    const currentUser = await getCurrentUser();
+
+    if (!currentUser) {
+      throw new Error("User not authenticated");
+    }
+
+    const userId = currentUser.id;
+
+    if (!interviewId) {
+      throw new Error("Missing interviewId");
     }
 
     if (!transcript || transcript.length === 0) {
@@ -52,41 +61,16 @@ Return JSON ONLY in EXACTLY this format:
 {
   "totalScore": number,
   "categoryScores": [
-    {
-      "name": "Communication Skills",
-      "score": number,
-      "comment": string
-    },
-    {
-      "name": "Technical Knowledge",
-      "score": number,
-      "comment": string
-    },
-    {
-      "name": "Problem-Solving",
-      "score": number,
-      "comment": string
-    },
-    {
-      "name": "Cultural & Role Fit",
-      "score": number,
-      "comment": string
-    },
-    {
-      "name": "Confidence & Clarity",
-      "score": number,
-      "comment": string
-    }
+    { "name": "Communication Skills", "score": number, "comment": string },
+    { "name": "Technical Knowledge", "score": number, "comment": string },
+    { "name": "Problem Solving", "score": number, "comment": string },
+    { "name": "Cultural Fit", "score": number, "comment": string },
+    { "name": "Confidence and Clarity", "score": number, "comment": string }
   ],
   "strengths": string[],
   "areasForImprovement": string[],
   "finalAssessment": string
 }
-
-IMPORTANT:
-- categoryScores MUST be an ARRAY
-- Do NOT return an object
-- Do NOT wrap in markdown
 `,
         },
       ],
@@ -95,26 +79,8 @@ IMPORTANT:
     const raw = completion.choices[0]?.message?.content;
     if (!raw) throw new Error("Empty OpenAI response");
 
-    const cleaned = raw
-      .replace(/```json/g, "")
-      .replace(/```/g, "")
-      .trim();
-
+    const cleaned = raw.replace(/```json/g, "").replace(/```/g, "").trim();
     const json = JSON.parse(cleaned);
-
-    // 🔥 Normalize category names before validation
-    json.categoryScores = json.categoryScores.map((item: any) => {
-      let name = item.name;
-
-      if (name.includes("Problem")) name = "Problem Solving";
-      if (name.includes("Cultural")) name = "Cultural Fit";
-      if (name.includes("Confidence")) name = "Confidence and Clarity";
-
-      return {
-        ...item,
-        name,
-      };
-    });
 
     const parsed = feedbackSchema.parse(json);
 
@@ -135,7 +101,6 @@ IMPORTANT:
 
     await feedbackRef.set(feedback);
 
-    // Mark interview finalized
     await db.collection("interviews").doc(interviewId).update({
       finalized: true,
     });
