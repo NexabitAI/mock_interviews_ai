@@ -159,4 +159,26 @@ export async function getLatestInterviews({
   });
 }
 
+export async function getFeedbackByInterviewId({
+  interviewId,
+  userId,
+}: GetFeedbackByInterviewIdParams): Promise<Feedback | null> {
+  if (!interviewId || !userId) return null;
+
+  const snapshot = await db
+    .collection("feedback")
+    .where("interviewId", "==", interviewId)
+    .where("userId", "==", userId)
+    .limit(1)
+    .get();
+
+  if (snapshot.empty) return null;
+
+  const doc = snapshot.docs[0];
+
+  return {
+    id: doc.id,
+    ...(doc.data() as Omit<Feedback, "id">),
+  };
+}
 
