@@ -8,7 +8,9 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY!,
 });
 
-/* ---------------------- CREATE FEEDBACK ---------------------- */
+/* ============================================================
+   CREATE FEEDBACK
+============================================================ */
 
 export async function createFeedback(params: CreateFeedbackParams) {
   const { interviewId, userId, transcript, feedbackId } = params;
@@ -41,25 +43,50 @@ export async function createFeedback(params: CreateFeedbackParams) {
         {
           role: "user",
           content: `
-Analyze the following mock interview transcript and generate structured feedback.
+Analyze this mock interview transcript:
 
-Transcript:
 ${formattedTranscript}
 
-Return JSON ONLY in this format:
+Return JSON ONLY in EXACTLY this format:
+
 {
   "totalScore": number,
-  "categoryScores": {
-    "communicationSkills": number,
-    "technicalKnowledge": number,
-    "problemSolving": number,
-    "culturalFit": number,
-    "confidenceClarity": number
-  },
+  "categoryScores": [
+    {
+      "name": "Communication Skills",
+      "score": number,
+      "comment": string
+    },
+    {
+      "name": "Technical Knowledge",
+      "score": number,
+      "comment": string
+    },
+    {
+      "name": "Problem-Solving",
+      "score": number,
+      "comment": string
+    },
+    {
+      "name": "Cultural & Role Fit",
+      "score": number,
+      "comment": string
+    },
+    {
+      "name": "Confidence & Clarity",
+      "score": number,
+      "comment": string
+    }
+  ],
   "strengths": string[],
   "areasForImprovement": string[],
   "finalAssessment": string
 }
+
+IMPORTANT:
+- categoryScores MUST be an ARRAY
+- Do NOT return an object
+- Do NOT wrap in markdown
 `,
         },
       ],
@@ -92,25 +119,34 @@ Return JSON ONLY in this format:
 
     await feedbackRef.set(feedback);
 
-    // ✅ Mark interview finalized
+    // Mark interview finalized
     await db.collection("interviews").doc(interviewId).update({
       finalized: true,
     });
 
     return { success: true, feedbackId: feedbackRef.id };
   } catch (error: any) {
-    console.error("CREATE FEEDBACK ERROR:", error.message);
+    console.error("CREATE FEEDBACK ERROR:", error?.message || error);
     return { success: false };
   }
 }
 
-/* ---------------------- INTERVIEW READ HELPERS ---------------------- */
+/* ============================================================
+   INTERVIEW READ HELPERS
+============================================================ */
 
-export async function getInterviewById(id: string) {
+export async function getInterviewById(
+  id: string
+): Promise<Interview | null> {
   if (!id) return null;
 
-  const interview = await db.collection("interviews").doc(id).get();
-  return interview.data() ?? null;
+  const doc = await db.collection("interviews").doc(id).get();
+  if (!doc.exists) return null;
+
+  return {
+    id: doc.id,
+    ...(doc.data() as Omit<Interview, "id">),
+  };
 }
 
 export async function getInterviewsByUserId(
@@ -124,13 +160,10 @@ export async function getInterviewsByUserId(
     .orderBy("createdAt", "desc")
     .get();
 
-  return snapshot.docs.map((doc) => {
-    const data = doc.data() as Omit<Interview, "id">;
-    return {
-      id: doc.id,
-      ...data,
-    };
-  });
+  return snapshot.docs.map((doc) => ({
+    id: doc.id,
+    ...(doc.data() as Omit<Interview, "id">),
+  }));
 }
 
 export async function getLatestInterviews({
@@ -150,13 +183,10 @@ export async function getLatestInterviews({
     (doc) => doc.data().userId !== userId
   );
 
-  return filtered.map((doc) => {
-    const data = doc.data() as Omit<Interview, "id">;
-    return {
-      id: doc.id,
-      ...data,
-    };
-  });
+  return filtered.map((doc) => ({
+    id: doc.id,
+    ...(doc.data() as Omit<Interview, "id">),
+  }));
 }
 
 export async function getFeedbackByInterviewId({
@@ -181,4 +211,3 @@ export async function getFeedbackByInterviewId({
     ...(doc.data() as Omit<Feedback, "id">),
   };
 }
-
