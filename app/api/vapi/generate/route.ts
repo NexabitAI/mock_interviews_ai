@@ -81,7 +81,7 @@ Return format example:
 
 export async function GET() {
   return Response.json(
-    { success: true, message: "Interview API working" },
+    { success: true, message: "Interview API is working" },
     { status: 200 }
   );
 }
