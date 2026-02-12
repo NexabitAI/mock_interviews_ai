@@ -18,6 +18,7 @@ export default async function Home() {
   }
 
   const userInterviews = await getInterviewsByUserId(user.id);
+  console.log(userInterviews)
   const allInterview = await getLatestInterviews({ userId: user.id });
 
   return (
@@ -51,7 +52,7 @@ export default async function Home() {
             userInterviews.map((interview) => (
               <InterviewCard
                 key={interview.id}
-                userId={user.id}
+                userId={interview.userId}
                 interviewId={interview.id}
                 role={interview.role}
                 type={interview.type}

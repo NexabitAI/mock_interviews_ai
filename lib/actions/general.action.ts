@@ -165,36 +165,36 @@ export async function getInterviewById(
   };
 }
 
-// export async function getInterviewsByUserId(
-//   userId: string
-// ): Promise<Interview[]> {
-//   if (!userId) return [];
-
-//   const snapshot = await db
-//     .collection("interviews")
-//     .where("userId", "==", userId)
-//     .orderBy("createdAt", "desc")
-//     .get();
-
-//   return snapshot.docs.map((doc) => ({
-//     id: doc.id,
-//     ...(doc.data() as Omit<Interview, "id">),
-//   }));
-// }
 export async function getInterviewsByUserId(
   userId: string
 ): Promise<Interview[]> {
-  const snapshot = await db.collection("interviews").get();
+  if (!userId) return [];
 
-  const interviews = snapshot.docs.map((doc) => ({
+  const snapshot = await db
+    .collection("interviews")
+    .where("userId", "==", userId)
+    .orderBy("createdAt", "desc")
+    .get();
+
+  return snapshot.docs.map((doc) => ({
     id: doc.id,
     ...(doc.data() as Omit<Interview, "id">),
   }));
-
-  console.log("ALL INTERVIEWS:", interviews);
-
-  return interviews;
 }
+// export async function getInterviewsByUserId(
+//   userId: string
+// ): Promise<Interview[]> {
+//   const snapshot = await db.collection("interviews").get();
+
+//   const interviews = snapshot.docs.map((doc) => ({
+//     id: doc.id,
+//     ...(doc.data() as Omit<Interview, "id">),
+//   }));
+
+//   console.log("ALL INTERVIEWS:", interviews);
+
+//   return interviews;
+// }
 
 
 export async function getLatestInterviews({
