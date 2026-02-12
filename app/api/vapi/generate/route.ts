@@ -1,17 +1,30 @@
 import OpenAI from "openai";
-
 import { db } from "@/firebase/admin";
 import { getRandomInterviewCover } from "@/lib/utils";
+import { getCurrentUser } from "@/lib/actions/auth.action";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY!,
 });
 
 export async function POST(request: Request) {
-  const { type, role, level, techstack, amount, userid } =
-    await request.json();
-
   try {
+    const { type, role, level, techstack, amount } =
+      await request.json();
+
+    // 🔐 Get user from session cookie
+    const user = await getCurrentUser();
+
+    if (!user?.id) {
+      return Response.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
+    const userId = user.id;
+
+    // 🧠 Generate interview questions
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       temperature: 0.7,
@@ -44,8 +57,10 @@ Rules:
     });
 
     const raw = completion.choices[0]?.message?.content;
+
     if (!raw) throw new Error("Empty OpenAI response");
 
+    // Clean markdown if model wraps output
     const cleaned = raw
       .replace(/```json/g, "")
       .replace(/```/g, "")
@@ -53,14 +68,17 @@ Rules:
 
     const questions = JSON.parse(cleaned);
 
+    // 🧱 Create interview document
     const interview = {
       role,
       type,
       level,
-      techstack: techstack.split(","),
+      techstack: techstack
+        .split(",")
+        .map((t: string) => t.trim()),
       questions,
-      userId: userid,
-      finalized: true,
+      userId,
+      finalized: false, // 🔥 IMPORTANT FIX
       coverImage: getRandomInterviewCover(),
       createdAt: new Date().toISOString(),
     };
@@ -69,7 +87,8 @@ Rules:
 
     return Response.json({ success: true }, { status: 200 });
   } catch (error: any) {
-    console.error("OPENAI INTERVIEW ERROR:", error.message);
+    console.error("INTERVIEW GENERATE ERROR:", error.message);
+
     return Response.json(
       { success: false, error: error.message },
       { status: 500 }
@@ -79,7 +98,7 @@ Rules:
 
 export async function GET() {
   return Response.json(
-    { success: true, data: "Thank you!" },
+    { success: true, message: "Interview API is working" },
     { status: 200 }
   );
 }
