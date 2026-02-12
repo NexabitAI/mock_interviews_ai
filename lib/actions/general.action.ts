@@ -100,7 +100,23 @@ IMPORTANT:
       .replace(/```/g, "")
       .trim();
 
-    const parsed = feedbackSchema.parse(JSON.parse(cleaned));
+    const json = JSON.parse(cleaned);
+
+    // 🔥 Normalize category names before validation
+    json.categoryScores = json.categoryScores.map((item: any) => {
+      let name = item.name;
+
+      if (name.includes("Problem")) name = "Problem Solving";
+      if (name.includes("Cultural")) name = "Cultural Fit";
+      if (name.includes("Confidence")) name = "Confidence and Clarity";
+
+      return {
+        ...item,
+        name,
+      };
+    });
+
+    const parsed = feedbackSchema.parse(json);
 
     const feedback = {
       interviewId,
