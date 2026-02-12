@@ -61,7 +61,7 @@ export default async function Home() {
               />
             ))
           ) : (
-            <p>You haven't taken any interviewsz yet</p>
+            <p>You haven't taken any interview yet</p>
           )}
         </div>
       </section>
