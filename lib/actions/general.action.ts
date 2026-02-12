@@ -170,17 +170,23 @@ export async function getInterviewsByUserId(
 ): Promise<Interview[]> {
   if (!userId) return [];
 
+  // 🔥 Remove orderBy from Firestore
   const snapshot = await db
     .collection("interviews")
     .where("userId", "==", userId)
-    .orderBy("createdAt", "desc")
     .get();
 
-  return snapshot.docs.map((doc) => ({
+  const interviews = snapshot.docs.map((doc) => ({
     id: doc.id,
     ...(doc.data() as Omit<Interview, "id">),
   }));
+
+  // 🔥 Sort in Node instead of Firestore
+  return interviews.sort((a, b) =>
+    b.createdAt.localeCompare(a.createdAt)
+  );
 }
+
 // export async function getInterviewsByUserId(
 //   userId: string
 // ): Promise<Interview[]> {
