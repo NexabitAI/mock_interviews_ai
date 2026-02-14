@@ -12,6 +12,7 @@ import {
 
 async function Home() {
   const user = await getCurrentUser();
+  console.log("LOGGED USER ID:", user);
 
   // 🔒 Prevent undefined userId crash
   if (!user?.id) {
