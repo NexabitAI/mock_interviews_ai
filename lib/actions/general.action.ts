@@ -19,11 +19,9 @@ export async function createFeedback(params: CreateFeedbackParams) {
   try {
     const currentUser = await getCurrentUser();
 
-    if (!currentUser) {
+    if (!currentUser?.id) {
       throw new Error("User not authenticated");
     }
-
-    const userId = currentUser.id;
 
     if (!interviewId) {
       throw new Error("Missing interviewId");
@@ -32,6 +30,8 @@ export async function createFeedback(params: CreateFeedbackParams) {
     if (!transcript || transcript.length === 0) {
       throw new Error("Transcript is empty");
     }
+
+    const userId = currentUser.id;
 
     const formattedTranscript = transcript
       .map(
@@ -101,9 +101,27 @@ Return JSON ONLY in EXACTLY this format:
 
     await feedbackRef.set(feedback);
 
-    await db.collection("interviews").doc(interviewId).update({
-      finalized: true,
-    });
+    /* ============================================================
+       🔥 CRITICAL FIX
+       Ensure interview document exists and update safely
+    ============================================================ */
+
+    const interviewRef = db.collection("interviews").doc(interviewId);
+    const interviewSnap = await interviewRef.get();
+
+    if (!interviewSnap.exists) {
+      // Prevent broken state
+      await interviewRef.set({
+        userId,
+        finalized: true,
+        createdAt: new Date().toISOString(),
+      });
+    } else {
+      await interviewRef.update({
+        finalized: true,
+        updatedAt: new Date().toISOString(),
+      });
+    }
 
     return { success: true, feedbackId: feedbackRef.id };
   } catch (error: any) {
@@ -135,7 +153,6 @@ export async function getInterviewsByUserId(
 ): Promise<Interview[]> {
   if (!userId) return [];
 
-  // 🔥 Remove orderBy from Firestore
   const snapshot = await db
     .collection("interviews")
     .where("userId", "==", userId)
@@ -146,27 +163,11 @@ export async function getInterviewsByUserId(
     ...(doc.data() as Omit<Interview, "id">),
   }));
 
-  // 🔥 Sort in Node instead of Firestore
+  // Safe sorting
   return interviews.sort((a, b) =>
-    b.createdAt.localeCompare(a.createdAt)
+    (b.createdAt || "").localeCompare(a.createdAt || "")
   );
 }
-
-// export async function getInterviewsByUserId(
-//   userId: string
-// ): Promise<Interview[]> {
-//   const snapshot = await db.collection("interviews").get();
-
-//   const interviews = snapshot.docs.map((doc) => ({
-//     id: doc.id,
-//     ...(doc.data() as Omit<Interview, "id">),
-//   }));
-
-//   console.log("ALL INTERVIEWS:", interviews);
-
-//   return interviews;
-// }
-
 
 export async function getLatestInterviews({
   userId,
@@ -177,18 +178,20 @@ export async function getLatestInterviews({
   const snapshot = await db
     .collection("interviews")
     .where("finalized", "==", true)
-    .orderBy("createdAt", "desc")
-    .limit(limit)
     .get();
 
-  const filtered = snapshot.docs.filter(
-    (doc) => doc.data().userId !== userId
-  );
+  const interviews = snapshot.docs
+    .map((doc) => ({
+      id: doc.id,
+      ...(doc.data() as Omit<Interview, "id">),
+    }))
+    .filter((interview) => interview.userId !== userId)
+    .sort((a, b) =>
+      (b.createdAt || "").localeCompare(a.createdAt || "")
+    )
+    .slice(0, limit);
 
-  return filtered.map((doc) => ({
-    id: doc.id,
-    ...(doc.data() as Omit<Interview, "id">),
-  }));
+  return interviews;
 }
 
 export async function getFeedbackByInterviewId({
