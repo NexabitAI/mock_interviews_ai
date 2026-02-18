@@ -12,8 +12,8 @@ import {
 
 async function Home() {
   const user = await getCurrentUser();
-  console.log("LOGGED USER ID:", user);
-
+  console.log("USER ID:", user?.id);
+  // console.log("USER INTERVIEWS:", userInterviews);/
   // 🔒 Prevent undefined userId crash
   if (!user?.id) {
     return (
@@ -73,7 +73,7 @@ async function Home() {
               />
             ))
           ) : (
-            <p>You haven&apos;t taken any interviews yet</p>
+            <p>You haven&apos;t taken any interviewsZ yet</p>
           )}
         </div>
       </section>
