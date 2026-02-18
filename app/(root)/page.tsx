@@ -12,7 +12,9 @@ import {
 
 async function Home() {
   const user = await getCurrentUser();
-
+  console.log("USER ID:", user?.id);
+  // console.log("USER INTERVIEWS:", userInterviews);/
+  // 🔒 Prevent undefined userId crash
   if (!user?.id) {
     return (
       <section className="mt-8">
@@ -21,21 +23,13 @@ async function Home() {
     );
   }
 
-  const [userInterviews, allInterviews] = await Promise.all([
+  const [userInterviews, allInterview] = await Promise.all([
     getInterviewsByUserId(user.id),
     getLatestInterviews({ userId: user.id }),
   ]);
 
-  // ✅ Completed interviews (finalized = true)
-  const completedInterviews =
-    userInterviews?.filter((interview) => interview.finalized === true) ?? [];
-
-  // ✅ Pending interviews (finalized = false)
-  const pendingInterviews =
-    allInterviews?.filter((interview) => interview.finalized === false) ?? [];
-
-  const hasCompleted = completedInterviews.length > 0;
-  const hasPending = pendingInterviews.length > 0;
+  const hasPastInterviews = (userInterviews?.length ?? 0) > 0;
+  const hasUpcomingInterviews = (allInterview?.length ?? 0) > 0;
 
   return (
     <>
@@ -61,13 +55,13 @@ async function Home() {
         />
       </section>
 
-      {/* Your Interviews (Completed Only) */}
+      {/* Your Interviews */}
       <section className="flex flex-col gap-6 mt-8">
         <h2>Your Interviews</h2>
 
         <div className="interviews-section">
-          {hasCompleted ? (
-            completedInterviews.map((interview) => (
+          {hasPastInterviews ? (
+            userInterviews?.map((interview) => (
               <InterviewCard
                 key={interview.id}
                 userId={user.id}
@@ -79,18 +73,18 @@ async function Home() {
               />
             ))
           ) : (
-            <p>You haven't taken any interviewssss yet</p>
+            <p>You haven&apos;t taken any interviewsZ yet</p>
           )}
         </div>
       </section>
 
-      {/* Take Interviews (Pending Only) */}
+      {/* Take Interviews */}
       <section className="flex flex-col gap-6 mt-8">
         <h2>Take Interviews</h2>
 
         <div className="interviews-section">
-          {hasPending ? (
-            pendingInterviews.map((interview) => (
+          {hasUpcomingInterviews ? (
+            allInterview?.map((interview) => (
               <InterviewCard
                 key={interview.id}
                 userId={user.id}
