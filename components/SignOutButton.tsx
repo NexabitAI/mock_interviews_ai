@@ -12,8 +12,9 @@ export default function SignOutButton() {
       setLoading(true);
       await fetch("/api/auth/logout", { method: "POST" });
     } finally {
-      router.replace("/sign-in"); // goes directly to /sign-in
-      router.refresh();           // bust any cached user state
+      // router.replace("/sign-in"); // goes directly to /sign-in
+      // router.refresh(); 
+      window.location.href = "/sign-in";          // bust any cached user state
     }
   };
 
