@@ -10,7 +10,7 @@ export default function SignOutButton() {
   const onClick = async () => {
     try {
       setLoading(true);
-      await fetch("/api/auth/logout", { method: "POST" });
+      await fetch("", { method: "POST" });
     } finally {
       router.replace("/sign-in"); // goes directly to /sign-in
       router.refresh();

@@ -1,16 +1,19 @@
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
-  const res = NextResponse.redirect(new URL("/sign-in", req.url), {
+  // Always redirect to production sign-in
+  const res = NextResponse.redirect("https://prepwisebot.pro/sign-in", {
     status: 303,
   });
+
+  // Clear session cookie
   res.cookies.set("session", "", {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: true,
     sameSite: "lax",
     path: "/",
     maxAge: 0,
-    // domain: ".yourdomain.com", // include ONLY if you also set it at login
   });
+
   return res;
 }
